@@ -9,10 +9,20 @@ dataBase = 'hospitalHistory'
 
 app.config['SQLALCHEMY_DATABASE_URI'] = f'mysql+pymysql://{host}:{password}@{username}:3306/{dataBase}'
 # sql lite database
-#app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////tmp/hospital.db'
+# app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////tmp/hospital.db'
 
-db = SQLAlchemy(app)
+db = SQLAlchemy(app)         
 
+
+@app.route('/git_update', methods=['POST'])
+def git_update():
+    repo = git.Repo('./orbe')
+    origin = repo.remotes.origin
+    repo.create_head('main',
+                     origin.refs.main).set_tracking_branch(origin.refs.main).checkout()
+    origin.pull()
+    return '', 200
+    
 @app.route('/')
 def hello_world():
    # return 'Hello, World!'
