@@ -1,23 +1,37 @@
-from flask import Flask, render_template, jsonify
+from flask import Flask, render_template, jsonify, request
 from flask_sqlalchemy import SQLAlchemy
 import git 
 import os
-import socket
+from sqlalchemy import create_engine,text
+# from flask_mysqldb import MySQL
 
-socket.gethostbyname("ims-mysql-server.mysql.database.azure.com")
+
+host = 'ap-south.connect.psdb.cloud'
+username = 'df7zqjydykpesxl5oy7p'
+password = 'pscale_pw_Vj3nfrYHeCMt8AhC1yH8u0sL6Ldvca6w2eUQhz2DrKJ'
+dataBase = 'mrmed'
+
+host2 = 'https://ims-mysql-server.mysql.database.azure.com'
+username2 = 'swarajbachu@ims-mysql-server'
+password2 = 'Google@class'
+dataBase2 = 'test'
+
+
 app = Flask(__name__)
 
-host = 'ims-mysql-server.mysql.database.azure.com'
-username = 'swarajbachu@ims-mysql-server'
-password = 'Google@class'
-dataBase = 'test'
+#app.config['SQLALCHEMY_DATABASE_URI'] = f'mysql+pymysql://{username2}:{password2}@{host2}:3306/{dataBase2}'
+#app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////tmp/hospital.db'
 
 
-app.config['SQLALCHEMY_DATABASE_URI'] = f'mysql+pymysql://{host}:{password}@{username}:3306/{dataBase}'
-# sql lite database
-# app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////tmp/hospital.db'
+uri = f'mysql+pymysql://{username2}:{password2}@{host2}:3306/{dataBase2}'
 
-db = SQLAlchemy(app)
+#db = SQLAlchemy(app)
+
+
+# app.config['MYSQL_HOST'] = host
+# app.config['MYSQL_USER'] = username
+# app.config['MYSQL_PASSWORD'] = password
+# app.config['MYSQL_DB'] = dataBase
 
 
 
@@ -38,18 +52,37 @@ def hello_world():
 # @app.route('/post_patient_records', methods=['POST'])
 # def post_patient_records():
 
-@app.route('/amstrong_number/<int:num>')
-def amstrong_number(num):
-    sum = 0
-    temp = num
-    while temp > 0:
-        digit = temp % 10
-        sum += digit ** 3
-        temp //= 10
-    if num == sum:
-        return jsonify({"result": "Amstrong Number"})
-    else:
-        return jsonify({"result": "Not Amstrong Number"})
+@app.route('/patient_record', methods=['GET','POST'])
+def patient_record():
+    if request.method == 'POST':
+        record_details = request.form
+        ECG = record_details['ECG']
+        #BMR = record_details['BMR']
+        PE = record_details['Physical Examination']
+        desease = record_details['disease']
+        treatment = record_details['Treatment']
+        Pid = record_details['Insurance Status']
+        # Year_of_diagnosis = record_details['Year_of_diagnosis']
+        Insurence_id = record_details['Doctor Name']
+        hospital_name = record_details['Hospital Name']
+        # print(ECG,PE,desease,Pid,Insurence_id,hospital_name)
+        engine = create_engine(uri)
+        with engine.connect() as conn:
+            conn.execute(text("INSERT INTO patient_record_ (Pid, ECG, BMR,Year_of_diagnosis, History_of_disease,Insurance_id) VALUES (:Pid,:ECG, :BMR, :desease,:Year_of_diagnosis :Insurance_id)"), ECG=ECG, BMR=PE, desease=desease,Year_of_diagnosis=hospital_name, Insurance_id=Insurance_id,Pid=pid)
+    return render_template('Treatment.html')
+    
+# @app.route('/amstrong_number/<int:num>')
+# def amstrong_number(num):
+#     sum = 0
+#     temp = num
+#     while temp > 0:
+#         digit = temp % 10
+#         sum += digit ** 3
+#         temp //= 10
+#     if num == sum:
+#         return jsonify({"result": "Amstrong Number"})
+#     else:
+#         return jsonify({"result": "Not Amstrong Number"})
 
 if __name__ == '__main__':
     app.run(debug=True)
