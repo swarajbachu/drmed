@@ -11,6 +11,11 @@ username = 'df7zqjydykpesxl5oy7p'
 password = 'pscale_pw_Vj3nfrYHeCMt8AhC1yH8u0sL6Ldvca6w2eUQhz2DrKJ'
 dataBase = 'mrmed'
 
+host1 = 'sql6.freesqldatabase.com'
+username1 = 'sql6580826'
+password1 = 'yBDLIINgZ8'
+dataBase1 = 'sql6580826'
+
 host2 = 'https://ims-mysql-server.mysql.database.azure.com'
 username2 = 'swarajbachu@ims-mysql-server'
 password2 = 'Google@class'
@@ -19,13 +24,13 @@ dataBase2 = 'test'
 
 app = Flask(__name__)
 
-#app.config['SQLALCHEMY_DATABASE_URI'] = f'mysql+pymysql://{username2}:{password2}@{host2}:3306/{dataBase2}'
+app.config['SQLALCHEMY_DATABASE_URI'] = f'mysql+pymysql://{username1}:{password1}@{host1}:3306/{dataBase1}'
 #app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////tmp/hospital.db'
 
 
-uri = f'mysql+pymysql://{username2}:{password2}@{host2}:3306/{dataBase2}'
+uri = f'mysql+pymysql://{username1}:{password1}@{host1}:3306/{dataBase1}'
 
-#db = SQLAlchemy(app)
+db = SQLAlchemy(app)
 
 
 # app.config['MYSQL_HOST'] = host
@@ -33,7 +38,11 @@ uri = f'mysql+pymysql://{username2}:{password2}@{host2}:3306/{dataBase2}'
 # app.config['MYSQL_PASSWORD'] = password
 # app.config['MYSQL_DB'] = dataBase
 
-
+def countRecords():
+    engine = create_engine(uri)
+    with engine.connect() as conn:
+        count = conn.execute(text("SELECT COUNT(*) FROM MedicalRecord")).scalar()
+        return count
 
 @app.route('/git_update', methods=['POST'])
 def git_update():
@@ -52,25 +61,57 @@ def hello_world():
 # @app.route('/post_patient_records', methods=['POST'])
 # def post_patient_records():
 
-@app.route('/patient_record', methods=['GET','POST'])
-def patient_record():
+@app.route('/patient_record/<int:pid>', methods=['GET','POST'])
+def patient_record(pid):
     if request.method == 'POST':
         record_details = request.form
         ECG = record_details['ECG']
-        #BMR = record_details['BMR']
+       # BMR = record_details['BMR']
         PE = record_details['Physical Examination']
-        desease = record_details['disease']
+        disease = record_details['disease']
         treatment = record_details['Treatment']
-        Pid = record_details['Insurance Status']
-        # Year_of_diagnosis = record_details['Year_of_diagnosis']
-        Insurence_id = record_details['Doctor Name']
+        Insurence_status = record_details['Insurance Status']
+        Date = record_details['Year_of_diagnosis']
+        doctorName = record_details['Doctor Name']
         hospital_name = record_details['Hospital Name']
+        rid = countRecords()+1
         # print(ECG,PE,desease,Pid,Insurence_id,hospital_name)
         engine = create_engine(uri)
         with engine.connect() as conn:
-            conn.execute(text("INSERT INTO patient_record_ (Pid, ECG, BMR,Year_of_diagnosis, History_of_disease,Insurance_id) VALUES (:Pid,:ECG, :BMR, :desease,:Year_of_diagnosis :Insurance_id)"), ECG=ECG, BMR=PE, desease=desease,Year_of_diagnosis=hospital_name, Insurance_id=Insurance_id,Pid=pid)
+            conn.execute(text("INSERT INTO MedicalRecord (Rid,Pid,BMR, ECG, disease,date,treatment,hospitalName,doctorName) VALUES (:Rid,:Pid,:ECG, :BMR,:Date, :disease,:treatment,:hospitalName,:doctorName)"),
+                         ECG=ECG, BMR=Insurence_status, Date=Date, disease=disease, Pid=pid, Rid=rid, treatment=treatment, hospitalName=hospital_name, doctorName=doctorName)
     return render_template('Treatment.html')
-    
+
+
+@app.route('/login', methods=['GET','POST'])
+def login():
+    if request.method == 'POST':
+        login_details = request.form
+        username = login_details['username']
+        password = login_details['password']
+        print(username,password)
+        engine = create_engine(uri)
+        with engine.connect() as conn:
+            conn.execute(text("INSERT INTO doctorLogin (username, password) VALUES (:username,:password)"), username=username, password=password)
+        
+    return render_template('Login.html')
+
+
+
+@app.route('/patient_details/<int:pid>', methods=['GET'])
+def patient_details(pid):
+    engine = create_engine(uri)
+    with engine.connect() as conn:
+        patient = conn.execute(text("SELECT * FROM PatientDetails WHERE Pid = :pid"), pid=pid).fetchall()
+        result = conn.execute(text("SELECT * FROM MedicalRecord WHERE Pid=:pid"), pid=pid).fetchall()
+        record = []
+        for row in result:
+            d = dict(row)
+            record.append(d)
+        patientDetails = dict(patient[0])
+        # results = [list(row) for row in result]
+        return jsonify(patientDetails,record)
+
 # @app.route('/amstrong_number/<int:num>')
 # def amstrong_number(num):
 #     sum = 0
